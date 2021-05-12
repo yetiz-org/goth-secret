@@ -15,9 +15,10 @@ type Cassandra struct {
 }
 
 type CassandraMeta struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	CaPath   string `json:"ca_path"`
+	Hosts    []string `json:"hosts"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	CaPath   string   `json:"ca_path"`
 }
 
 func CassandraProfile(cassandraName string) *Cassandra {

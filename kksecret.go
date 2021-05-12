@@ -46,14 +46,14 @@ func DatabaseProfile(dbname string) *Database {
 	}
 
 	if bytes, err := ioutil.ReadFile(path); err == nil {
-		var database = []Database{*new(Database)}
-		if err := json.Unmarshal(bytes, &database); err != nil {
+		database := &Database{}
+		if err := json.Unmarshal(bytes, database); err != nil {
 			return nil
 		}
 
-		database[0].Name = dbname
-		database[0].Path = path
-		return &database[0]
+		database.Name = dbname
+		database.Path = path
+		return database
 	}
 
 	return nil
@@ -66,14 +66,14 @@ func RedisProfile(redisName string) *Redis {
 	}
 
 	if bytes, err := ioutil.ReadFile(path); err == nil {
-		var redis = *new(Redis)
-		if err := json.Unmarshal(bytes, &redis); err != nil {
+		var redis = &Redis{}
+		if err := json.Unmarshal(bytes, redis); err != nil {
 			return nil
 		}
 
 		redis.Name = redisName
 		redis.Path = path
-		return &redis
+		return redis
 	}
 
 	return nil

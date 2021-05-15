@@ -46,7 +46,7 @@ func DatabaseProfile(dbname string) *Database {
 	}
 
 	if bytes, err := ioutil.ReadFile(path); err == nil {
-		var database = []Database{*new(Database)}
+		var database []Database
 		if err := json.Unmarshal(bytes, &database); err != nil {
 			return nil
 		}

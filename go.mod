@@ -1,4 +1,4 @@
-module github.com/kklab-com/goth-kksecret
+module github.com/yetiz-org/goth-kksecret
 
 go 1.16
 

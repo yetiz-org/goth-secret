@@ -1,79 +1,105 @@
-package kksecret
+package secret
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"path"
+	"reflect"
+	"unsafe"
 )
 
-var PATH = "/the-secret/"
+var PATH = "/secret/"
 
-type Database struct {
-	Name   string
-	Path   string
-	Writer DatabaseMeta `json:"writer"`
-	Reader DatabaseMeta `json:"reader"`
+type DefaultSecret struct {
+	_Name string
+	_Path string
 }
 
-type Redis struct {
-	Name   string
-	Path   string
-	Master RedisMeta `json:"master"`
-	Slave  RedisMeta `json:"slave"`
+func (d *DefaultSecret) Name() string {
+	return d._Name
 }
 
-type DatabaseMeta struct {
-	Adapter string
-	Params  struct {
-		Charset  string `json:"charset"`
-		Host     string `json:"host"`
-		DBName   string `json:"dbname"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-	} `json:"params"`
+func (d *DefaultSecret) Path() string {
+	return d._Path
 }
 
-type RedisMeta struct {
-	Host string `json:"host"`
-	Port uint   `json:"port"`
-}
-
-func DatabaseProfile(dbname string) *Database {
-	path := fmt.Sprintf("%sdb-%s/db.json", PATH, dbname)
-	if _, e := os.Stat(path); os.IsNotExist(e) {
-		return nil
+// 遞迴查找結構體中的 DefaultSecret 欄位
+func findDefaultSecret(v reflect.Value) (bool, reflect.Value) {
+	if v.Kind() != reflect.Struct {
+		return false, reflect.Value{}
 	}
 
-	if bytes, err := ioutil.ReadFile(path); err == nil {
-		var database []Database
-		if err := json.Unmarshal(bytes, &database); err != nil {
-			return nil
+	// 檢查當前結構體是否有 DefaultSecret 欄位
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+
+		// 直接檢查是否為 DefaultSecret 類型
+		if field.Name == "DefaultSecret" {
+			return true, v.Field(i)
 		}
 
-		database[0].Name = dbname
-		database[0].Path = path
-		return &database[0]
+		// 如果是嵌套結構體，則遞迴檢查
+		if field.Type.Kind() == reflect.Struct {
+			if found, defaultSecretField := findDefaultSecret(v.Field(i)); found {
+				return true, defaultSecretField
+			}
+		}
 	}
 
-	return nil
+	return false, reflect.Value{}
 }
 
-func RedisProfile(redisName string) *Redis {
-	path := fmt.Sprintf("%sredis-%s/redis.json", PATH, redisName)
-	if _, e := os.Stat(path); os.IsNotExist(e) {
-		return nil
+type Secret interface {
+	Name() string
+	Path() string
+}
+
+func Load(typ string, name string, secret Secret) error {
+	secretValue := reflect.ValueOf(secret)
+	if secretValue.Kind() != reflect.Ptr {
+		return fmt.Errorf("secret should be a pointer")
 	}
 
-	if bytes, err := ioutil.ReadFile(path); err == nil {
-		var redis = &Redis{}
-		if err := json.Unmarshal(bytes, redis); err != nil {
-			return nil
+	secretElem := secretValue.Elem()
+	if secretElem.Kind() != reflect.Struct {
+		return fmt.Errorf("secret should be a struct")
+	}
+
+	hasDefaultSecret := false
+	found, defaultSecretField := findDefaultSecret(secretElem)
+	if found {
+		hasDefaultSecret = true
+	}
+
+	if !hasDefaultSecret {
+		return fmt.Errorf("struct should have a DefaultSecret field")
+	}
+
+	secretPath := path.Join(PATH, fmt.Sprintf("%s-%s/secret.json", typ, name))
+	if _, e := os.Stat(secretPath); os.IsNotExist(e) {
+		return e
+	}
+	if bytes, err := os.ReadFile(secretPath); err == nil {
+		if err := json.Unmarshal(bytes, secret); err != nil {
+			return err
 		}
 
-		redis.Name = redisName
-		redis.Path = path
-		return redis
+		if found && defaultSecretField.IsValid() {
+			nameField := defaultSecretField.FieldByName("_Name")
+			pathField := defaultSecretField.FieldByName("_Path")
+
+			if nameField.IsValid() {
+				v := reflect.NewAt(nameField.Type(), unsafe.Pointer(nameField.UnsafeAddr()))
+				v.Elem().SetString(name)
+			}
+
+			if pathField.IsValid() {
+				v := reflect.NewAt(pathField.Type(), unsafe.Pointer(pathField.UnsafeAddr()))
+				v.Elem().SetString(secretPath)
+			}
+		}
 	}
 
 	return nil

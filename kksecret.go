@@ -24,23 +24,19 @@ func (d *DefaultSecret) Path() string {
 	return d._Path
 }
 
-// 遞迴查找結構體中的 DefaultSecret 欄位
 func findDefaultSecret(v reflect.Value) (bool, reflect.Value) {
 	if v.Kind() != reflect.Struct {
 		return false, reflect.Value{}
 	}
 
-	// 檢查當前結構體是否有 DefaultSecret 欄位
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 
-		// 直接檢查是否為 DefaultSecret 類型
 		if field.Name == "DefaultSecret" {
 			return true, v.Field(i)
 		}
 
-		// 如果是嵌套結構體，則遞迴檢查
 		if field.Type.Kind() == reflect.Struct {
 			if found, defaultSecretField := findDefaultSecret(v.Field(i)); found {
 				return true, defaultSecretField

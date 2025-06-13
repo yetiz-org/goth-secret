@@ -10,18 +10,15 @@ import (
 )
 
 func TestDatabaseProfile(t *testing.T) {
-	// 設置測試環境
 	oldPath := PATH
 	PATH = "./"
 	defer func() { PATH = oldPath }()
 
-	// 創建測試目錄和文件
 	testDir := path.Join(".", "database-test")
 	os.MkdirAll(testDir, fs.ModePerm)
 	secretDir := path.Join(testDir, "secret.json")
 	defer os.RemoveAll(testDir)
 
-	// 創建測試數據
 	testData := `{
 	"writer": {
 		"adapter": "mysql",
@@ -49,16 +46,13 @@ func TestDatabaseProfile(t *testing.T) {
 
 	os.WriteFile(secretDir, []byte(testData), fs.ModePerm)
 
-	// 創建 Database 實例並載入數據
 	db := &Database{}
 	err := Load("database", "test", db)
 
-	// 驗證
 	assert.NoError(t, err)
 	assert.Equal(t, "test", db.Name())
 	assert.NotEmpty(t, db.Path())
 
-	// 驗證 Writer 欄位
 	assert.Equal(t, "mysql", db.Writer.Adapter)
 	assert.Equal(t, "utf8mb4", db.Writer.Params.Charset)
 	assert.Equal(t, "localhost", db.Writer.Params.Host)
@@ -67,7 +61,6 @@ func TestDatabaseProfile(t *testing.T) {
 	assert.Equal(t, "test_user", db.Writer.Params.Username)
 	assert.Equal(t, "test_password", db.Writer.Params.Password)
 
-	// 驗證 Reader 欄位
 	assert.Equal(t, "mysql", db.Reader.Adapter)
 	assert.Equal(t, "utf8mb4", db.Reader.Params.Charset)
 	assert.Equal(t, "readonly.localhost", db.Reader.Params.Host)

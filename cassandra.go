@@ -8,6 +8,7 @@ type Cassandra struct {
 
 type CassandraMeta struct {
 	Endpoints []string `json:"endpoints"`
+	Keyspace  string   `json:"keyspace"`
 	Username  string   `json:"username"`
 	Password  string   `json:"password"`
 	CaPath    string   `json:"ca_path"`

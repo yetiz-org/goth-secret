@@ -9,7 +9,15 @@ import (
 	"unsafe"
 )
 
-var PATH = "/secret/"
+var PATH = ""
+
+func Path() string {
+	if PATH == "" {
+		return os.Getenv("GOTH_SECRET_PATH")
+	}
+
+	return PATH
+}
 
 type DefaultSecret struct {
 	_Name string

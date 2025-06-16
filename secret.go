@@ -81,7 +81,7 @@ func Load(typ string, name string, secret Secret) error {
 		return fmt.Errorf("struct should have a DefaultSecret field")
 	}
 
-	secretPath := path.Join(PATH, fmt.Sprintf("%s-%s/secret.json", typ, name))
+	secretPath := path.Join(Path(), fmt.Sprintf("%s-%s/secret.json", typ, name))
 	if _, e := os.Stat(secretPath); os.IsNotExist(e) {
 		return e
 	}
